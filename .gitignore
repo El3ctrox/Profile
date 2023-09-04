@@ -1,0 +1,9 @@
+# Wally packages
+/Packages
+
+# Lock files
+/*.lock
+
+# Obsidian
+docs/.obsidian
+docs/tasks.md
