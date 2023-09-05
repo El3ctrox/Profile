@@ -91,16 +91,39 @@ return function()
     describe("set data loader", function()
         
         local setLoader = DataLoader.set(
-            DataLoader.string(),
-            DataLoader.number()
+            DataLoader.integer(),
+            DataLoader.string()
         )
-
+        
         it("should load data", function()
-        
-        
+            
+            local data = {
+                { index = 1, value = "sword" },
+                { index = 3, value = "apple" },
+                { index = 10, value = "armor" },
+            }
+            local inventory = setLoader:load(data)
+            
+            expect(match(inventory, {
+                [1] = "sword",
+                [3] = "apple",
+                [10] = "armor"
+            }))
         end)
-        it("should discart bad index")
-        it("should")
+        it("should discart bad indexes", function()
+            
+            local data = {
+                { index = 1, value = "sword" },
+                { index = "maxItems", value = 5 },
+                { index = 10, value = "armor" },
+            }
+            local inventory = setLoader:load(data)
+            
+            expect(match(inventory, {
+                [1] = "sword",
+                [10] = "armor"
+            }))
+        end)
     end)
     
     describe("struct data loader", function()
