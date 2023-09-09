@@ -216,10 +216,10 @@ return function()
     describe("struct data loader", function()
         
         local itemLoader = DataLoader.struct{
-            name = DataLoader.string():enablePanic(),
+            name = DataLoader.string(),
             level = DataLoader.integer(1),
             color = DataLoader.color(Color3.new())
-        }:enableCorrection()
+        }
         
         it("should load all fields", function()
             
@@ -228,21 +228,68 @@ return function()
             
             expect(match(item, { name = "sword", level = 2, color = Color3.fromRGB(0, 255, 50) }))
         end)
-        it("should fill missing fields", function()
+        it("should discart all if some bad field", function()
             
             local data = { name = "sword", level = 1 }
             local item = itemLoader:load(data)
             
-            expect(match(item, { name = "sword", level = 1, color = Color3.new() }))
+            expect(item).to.be.equal(nil)
         end)
-        it("should discart when miss main field", function()
+        
+        it("should fill missing fields", function()
             
-            local data = { level = 3 }
+            itemLoader:enableCorrection()
+            
+            local data = { name = "sword", level = 1 }
             local item = itemLoader:load(data)
             
-            print(itemLoader:check(data))
+            expect(match(item, {
+                name = "sword",
+                level = 1,
+                color = Color3.new()
+            }))
+            expect(match(data, {
+                name = "sword",
+                level = 1,
+                color = { R = 0, G = 0, B = 0 }
+            }))
+        end)
+        it("should discart when miss a required field", function()
+            
+            itemLoader:enableCorrection()
+            
+            local data = { level = 3, color = { R = 0, G = 0, B = 0 } }
+            local item = itemLoader:load(data)
             
             expect(item).to.be.equal(nil)
+        end)
+        it("should discart when miss data", function()
+            
+            itemLoader:enableCorrection()
+            
+            local item = itemLoader:load("not a table")
+            expect(item).to.be.equal(nil)
+        end)
+        
+        it("should consider fields to inferring default data", function()
+            
+            itemLoader:setUniqueDefaultData()
+            itemLoader.name:optional()
+            
+            local item = itemLoader:load(nil)
+            expect(match(item, { level = 1, color = Color3.new() })).to.be.ok()
+        end)
+        it("shouldnt give same default data address", function()
+            
+            itemLoader:setUniqueDefaultData()
+            itemLoader.name:optional()
+            
+            local defaultItem1 = itemLoader:load()
+            local defaultItem2 = itemLoader:load()
+            
+            expect(defaultItem1).to.be.ok()
+            expect(defaultItem2).to.be.ok()
+            expect(defaultItem1).never.to.be.equal(defaultItem2)
         end)
     end)
 end
