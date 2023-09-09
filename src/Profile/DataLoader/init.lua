@@ -151,11 +151,13 @@ function DataLoader.array<loadedElement, serializedElement>(
     end
     function self:correct(data)
         
+        if typeof(data) ~= "table" then return end
+        
         for index, value in ipairs(data) do
             
             if pcall(valuesLoader.check, valuesLoader, value) then return end
             
-            local correction = self:correct(value)
+            local correction = elementLoader:correct(value)
             if correction then
                 
                 data[index] = correction
