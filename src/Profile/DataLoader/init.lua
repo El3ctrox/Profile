@@ -448,8 +448,10 @@ function DataLoader.color(default: Color3?): DataLoader<Color3, { R: number, G: 
     self.kind = "Color3"
     
     --// Override Methods
+    local super = self.deserialize
     function self:deserialize(data: data): Color3
         
+        data = super(self, data)
         return Color3.fromRGB(data.R, data.G, data.B)
     end
     function self:serialize(color: Color3): data
