@@ -17,7 +17,7 @@ local function xtypeof(value: any): string
 end
 
 --// Functions
-function DataLoader.new<loaded, serialized>(default: loaded?)
+function DataLoader.new<loaded, serialized>(defaultData: serialized?)
     
     local meta = { __metatable = "locked" }
     local self = setmetatable({ type = "DataLoader", kind = "abstract" }, meta)
@@ -39,6 +39,8 @@ function DataLoader.new<loaded, serialized>(default: loaded?)
     end
     function self:setDefaultData(_defaultData: serialized): DataLoader<loaded, serialized>
         
+        self.defaultData = _defaultData
+        self.isUnique = false
         return self
     end
     function self:getDefaultData(): serialized
@@ -84,23 +86,40 @@ function DataLoader.new<loaded, serialized>(default: loaded?)
         
         return data
     end
+    function self:tryCheck(data: any): boolean
+        
+        return pcall(self.check, self, data)
+    end
     function self:check(data: any)
     end
     
     function self:deserialize(data: serialized): loaded
+        
+        return data
     end
     function self:serialize(value: loaded): serialized
+        
+        return value
     end
     
     function self:load(data: serialized|any): loaded?
         
-        if self.canCorrect and not pcall(self.check, self, data) then
+        if self.canCorrect and not self:tryCheck(data) then
             
-            data = self:correct(data) or default
+            data = self:correct(data)
+        end
+        if self.defaultData ~= nil and not self:tryCheck(data) then
+            
+            data = self:getDefaultData()
+        end
+        if self.isOptional and data == nil then
+            
+            return
         end
         
-        if self.canPanic then self:check(data) end
-        if not data then return end
+        if self.canPanic then self:check(data)
+            elseif not self:tryCheck(data) then return
+        end
         
         return self:deserialize(data)
     end
@@ -115,7 +134,11 @@ function DataLoader.new<loaded, serialized>(default: loaded?)
     --// Meta
     function self:__tostring()
         
-        return `DataLoader.{self.kind}()`
+        return `DataLoader.{self.kind}(`
+            ..(if self.canCorrect then "can correct" else "abort")..", "
+            ..(if self.canPanic then "can panic" else "quiet")..", "
+            ..(if self.defaultData then tostring(self:getDefaultData()) else "discart")
+            ..')'
     end
     
     --// End
@@ -123,11 +146,11 @@ function DataLoader.new<loaded, serialized>(default: loaded?)
 end
 
 function DataLoader.array<loadedElement, serializedElement>(
-    valuesLoader: DataLoader<loadedElement, serializedElement>?,
+    elementLoader: DataLoader<loadedElement, serializedElement>?,
     minLength: number?, maxLength: number?
 ): DataLoader<{loadedElement}, {serializedElement}>
     
-    valuesLoader = valuesLoader or DataLoader.new()
+    elementLoader = elementLoader or DataLoader.new()
     
     type array = {loadedElement}
     type data = {serializedElement}
@@ -136,6 +159,8 @@ function DataLoader.array<loadedElement, serializedElement>(
     self.kind = "array"
     self.min = minLength
     self.max = maxLength
+    
+    self.elements = elementLoader
     
     --// Override Methods
     function self:check(data)
@@ -146,7 +171,7 @@ function DataLoader.array<loadedElement, serializedElement>(
         
         for _,value in ipairs(data) do
             
-            valuesLoader:check(value)
+            elementLoader:check(value)
         end
     end
     function self:correct(data)
@@ -155,7 +180,7 @@ function DataLoader.array<loadedElement, serializedElement>(
         
         for index, value in ipairs(data) do
             
-            if pcall(valuesLoader.check, valuesLoader, value) then return end
+            if elementLoader:tryCheck(value) then return end
             
             local correction = elementLoader:correct(value)
             if correction then
@@ -176,7 +201,7 @@ function DataLoader.array<loadedElement, serializedElement>(
         
         for _,value in ipairs(data) do
             
-            local loadedValue = valuesLoader:load(value)
+            local loadedValue = elementLoader:deserialize(value)
             table.insert(array, loadedValue)
         end
         
@@ -188,7 +213,7 @@ function DataLoader.array<loadedElement, serializedElement>(
         
         for _,loadedValue in ipairs(array) do
             
-            local value = valuesLoader:save(loadedValue)
+            local value = elementLoader:serialize(loadedValue)
             table.insert(data, value)
         end
         
@@ -214,6 +239,8 @@ function DataLoader.set<loadedKey, loadedValue, serializedKey, serializedValue>(
         }
     )
     self.kind = "set"
+    self.index = indexLoader
+    self.value = valueLoader
     
     --// Override Methods
     function self:deserialize(data: data): set
@@ -222,11 +249,11 @@ function DataLoader.set<loadedKey, loadedValue, serializedKey, serializedValue>(
         
         for index, value in data do
             
-            local loadedIndex = indexLoader:load(index)
-            if not loadedIndex then continue end
+            local deserializedIndex = indexLoader:deserialize(index)
+            if not deserializedIndex then continue end
             
-            local loadedValue = valueLoader:load(value)
-            set[loadedIndex] = loadedValue
+            local deserializedValue = valueLoader:deserialize(value)
+            set[deserializedIndex] = deserializedValue
         end
         
         return set
@@ -237,7 +264,7 @@ function DataLoader.set<loadedKey, loadedValue, serializedKey, serializedValue>(
         
         for index, value in set do
             
-            table.insert(data, { index = indexLoader:save(index), value = valueLoader:save(value) })
+            table.insert(data, { index = indexLoader:serialize(index), value = valueLoader:serialize(value) })
         end
         
         return data
@@ -246,26 +273,33 @@ function DataLoader.set<loadedKey, loadedValue, serializedKey, serializedValue>(
     --// End
     return self
 end
-function DataLoader.struct<loaded>(struct: loaded & { [string]: any })
+function DataLoader.struct<loaded>(_loaders: { [string]: any })
     
-    local defaultStruct: loaded = {}
-    local loaders = {}
+    local self = DataLoader.new()
+    self.kind = "struct"
     
-    for index, default in struct do
+    --// Setup
+    local defaultData: loaded = {}
+    local loaders = {} :: { [string]: DataLoader<any, any> }
+    
+    for index, value in _loaders do
         
-        if xtypeof(default) == "DataLoader" then
+        if xtypeof(value) == "DataLoader" then
             
-            loaders[index] = default
-            defaultStruct[index] = default.default
+            local loader = value
+            
+            defaultData[index] = loader.defaultData
+            loaders[index] = loader
+            self[index] = loader
         else
             
-            loaders[index] = DataLoader.new(default)
-            defaultStruct[index] = default
+            local loader = DataLoader.new(value)
+            
+            defaultData[index] = value
+            loaders[index] = loader
+            self[index] = loader
         end
     end
-    
-    local self = DataLoader.new(defaultStruct)
-    self.kind = "struct"
     
     --// Override Methods
     local super = self.setDefaultData
@@ -284,10 +318,9 @@ function DataLoader.struct<loaded>(struct: loaded & { [string]: any })
         
         assert(typeof(data) == "table", `table expected`)
         
-        print(loaders)
-        
         for index, loader in loaders do
             
+            if loader.isOptional then continue end
             loader:check(data[index])
         end
     end
@@ -299,9 +332,9 @@ function DataLoader.struct<loaded>(struct: loaded & { [string]: any })
         
         for index, loader in loaders do
             
-            if pcall(loader.check, loader, data[index]) then continue end
+            if loader:tryCheck(data[index]) then continue end
             
-            local correction = loader:correct(data[index])
+            local correction = loader:correct(data[index]) or loader:getDefaultData()
             if not correction then return end
             
             corrections[index] = correction
@@ -382,13 +415,13 @@ function DataLoader.integer(default: number?, min: number?, max: number?): DataL
         assert(data % 1 == 0, `integer cant have decimal cases`)
     end
     
-    local super = self.check
+    local super = self.correct
     function self:correct(data)
         
         data = super(self, data)
         if not data then return end
         
-        return math.clamp(math.floor(data), min, max)
+        return math.floor(data)
     end
     
     --// End
@@ -410,10 +443,10 @@ function DataLoader.number(default: number?, min: number?, max: number?): DataLo
     end
     function self:correct(data)
         
-        if typeof(data) == "string" then data = tonumber(data)
-        elseif typeof(data) ~= "number" then return end
+        if typeof(data) == "string" then data = tonumber(data) end
+        if typeof(data) ~= "number" then return end
         
-        return math.clamp(data, min, max)
+        return math.clamp(data, min or -math.huge, max or math.huge)
     end
     
     --// End
