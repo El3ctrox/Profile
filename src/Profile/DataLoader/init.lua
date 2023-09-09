@@ -441,10 +441,10 @@ function DataLoader.color(default: Color3?): DataLoader<Color3, { R: number, G: 
     type data = { R: number, G: number, B: number }
     
     local self = DataLoader.struct{
-        R = DataLoader.number(),
-        G = DataLoader.number(),
-        B = DataLoader.number()
-    }:default(default)
+        R = DataLoader.integer(0),
+        G = DataLoader.integer(0),
+        B = DataLoader.integer(0)
+    }
     self.kind = "Color3"
     
     --// Override Methods
