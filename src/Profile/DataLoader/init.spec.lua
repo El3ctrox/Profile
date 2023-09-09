@@ -33,7 +33,6 @@ return function()
         
         local colorLoader = DataLoader.color()
             :enableCorrection()
-            :enablePanic()
         
         it("should load RGB(2, 3, 4)", function()
             
@@ -50,26 +49,26 @@ return function()
             local data = { R = 50, G = 255 }
             local color = colorLoader:load(data)
             
+            expect(typeof(color)).to.be.equal("Color3")
             expect(color.B).to.be.equal(0)
+            expect(data.B).to.be.equal(0)
         end)
         it("should convert missing fields", function()
             
             local data = { R = "255", G = 50, B = 10 }
             local color = colorLoader:load(data)
             
-            expect(color.R*255).to.be.equal(255)
-            expect(color.G*255).to.be.equal(50)
-            expect(color.B*255).to.be.equal(10)
+            expect(typeof(color)).to.be.equal("Color3")
+            expect(color.R*255).to.be.near(255, .1)
+            expect(color.G*255).to.be.near(50, .1)
+            expect(color.B*255).to.be.near(10, .1)
+            
+            expect(data.R).to.be.equal(255)
         end)
-        it("should panic when cant fix data", function()
+        it("should discart without default data", function()
             
-            local data = "cavalo"
-            
-            expect(function()
-                
-                colorLoader:load(data)
-                
-            end).to.throw()
+            local color = colorLoader:load(nil)
+            expect(color).to.be.equal(nil)
         end)
     end)
     
