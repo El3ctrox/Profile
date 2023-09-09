@@ -83,12 +83,49 @@ return function()
             
             expect(match(items, { "sword", "apple" })).to.be.ok()
         end)
-        it("should discart bad elements", function()
+        it("should discart all if some bad element", function()
+            
+            local data = { "armor", 5, "cavalo" }
+            local items = itemsLoader:load(data)
+            
+            expect(items).to.be.equal(nil)
+        end)
+        
+        it("should discart just bad elements", function()
+            
+            itemsLoader:enableCorrection()
             
             local data = { "armor", 5, "cavalo" }
             local items = itemsLoader:load(data)
             
             expect(match(items, { "armor", "cavalo" })).to.be.ok()
+            expect(match(data, { "armor", "cavalo" })).to.be.ok()
+        end)
+        it("should discart when miss data", function()
+            
+            itemsLoader:enableCorrection()
+            
+            local color = itemsLoader:load("not a array")
+            expect(color).to.be.equal(nil)
+        end)
+        
+        it("should load default data", function()
+            
+            itemsLoader:setUniqueDefaultData({})
+            
+            local items = itemsLoader:load(nil)
+            expect(match(items, {})).to.be.ok()
+        end)
+        it("shouldnt give same default data address", function()
+            
+            itemsLoader:setUniqueDefaultData({})
+            
+            local defaultItems1 = itemsLoader:load()
+            local defaultItems2 = itemsLoader:load()
+            
+            expect(defaultItems1).to.be.ok()
+            expect(defaultItems2).to.be.ok()
+            expect(defaultItems1).never.to.be.equal(defaultItems2)
         end)
     end)
     
