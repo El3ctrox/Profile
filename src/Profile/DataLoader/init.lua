@@ -23,17 +23,29 @@ function DataLoader.new<loaded, serialized>(default: loaded?)
     local self = setmetatable({ type = "DataLoader", kind = "abstract" }, meta)
     local handler: DataHandler?
     
-    self.default = default
+    self.defaultData = defaultData
+    self.isUnique = false
+    
+    self.isOptional = false
     self.canCorrect = false
     self.canPanic = false
     
     --// Methods
-    function self:default(defaultValue: loaded): DataLoader<loaded, serialized>
+    function self:setUniqueDefaultData(_defaultData: serialized & table): DataLoader<loaded, serialized>
         
-        self.default = defaultValue
-        default = defaultValue
+        self.defaultData = _defaultData
+        self.isUnique = true
+        return self
+    end
+    function self:setDefaultData(_defaultData: serialized): DataLoader<loaded, serialized>
         
         return self
+    end
+    function self:getDefaultData(): serialized
+        
+        return if self.isUnique
+            then table.clone(self.defaultData)
+            else self.defaultData
     end
     
     function self:handle(container: Instance?): DataHandler
@@ -60,6 +72,11 @@ function DataLoader.new<loaded, serialized>(default: loaded?)
     function self:enablePanic(): DataLoader<loaded, serialized>
         
         self.canPanic = true
+        return self
+    end
+    function self:optional(): DataLoader<loaded, serialized>
+        
+        self.isOptional = true
         return self
     end
     
@@ -249,6 +266,18 @@ function DataLoader.struct<loaded>(struct: loaded & { [string]: any })
     self.kind = "struct"
     
     --// Override Methods
+    local super = self.setDefaultData
+    function self:setDefaultData(_defaultData: any?)
+        
+        super(self, if _defaultData == nil then defaultData else _defaultData)
+    end
+    
+    local super = self.setUniqueDefaultData
+    function self:setUniqueDefaultData(_defaultData: Instance|table?)
+        
+        super(self, if _defaultData == nil then defaultData else _defaultData)
+    end
+    
     function self:check(data)
         
         assert(typeof(data) == "table", `table expected`)
@@ -429,6 +458,7 @@ function DataLoader.color(default: Color3?): DataLoader<Color3, { R: number, G: 
     end
     
     --// End
+    if default then self:setDefaultData{ R = default.R, G = default.G, B = default.B } end
     return self
 end
 
