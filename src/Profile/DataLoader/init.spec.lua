@@ -9,6 +9,11 @@ local function match(data, pattern: { [any]: any })
             if not match(data[index], patternValue) then return false end
         end
         
+        for index in data do
+            
+            if pattern[index] == nil then return false end
+        end
+        
         return true
         
     elseif typeof(pattern) == "string" then
