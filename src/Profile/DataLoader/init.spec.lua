@@ -151,12 +151,28 @@ return function()
                 [10] = "armor"
             }))
         end)
-        it("should discart bad indexes", function()
+        it("should discart all if some bad pair", function()
             
             local data = {
                 { index = 1, value = "sword" },
                 { index = "maxItems", value = 5 },
                 { index = 10, value = "armor" },
+                { index = 15, value = 15 },
+            }
+            local inventory = setLoader:load(data)
+            
+            expect(inventory).to.be.equal(nil)
+        end)
+        
+        it("should discart bad indexes", function()
+            
+            setLoader:enableCorrection()
+            
+            local data = {
+                { index = 1, value = "sword" },
+                { index = "maxItems", value = 5 },
+                { index = 10, value = "armor" },
+                { index = 15, value = 15 },
             }
             local inventory = setLoader:load(data)
             
@@ -164,6 +180,36 @@ return function()
                 [1] = "sword",
                 [10] = "armor"
             }))
+            expect(match(data, {
+                { index = 1, value = "sword" },
+                { index = 10, value = "armor" },
+            }))
+        end)
+        it("should discart when miss data", function()
+            
+            setLoader:enableCorrection()
+            
+            local set = setLoader:load("not a set")
+            expect(set).to.be.equal(nil)
+        end)
+        
+        it("should load default data", function()
+            
+            setLoader:setUniqueDefaultData({})
+            
+            local set = setLoader:load(nil)
+            expect(match(set, {})).to.be.ok()
+        end)
+        it("shouldnt give same default data address", function()
+            
+            setLoader:setUniqueDefaultData({})
+            
+            local defaultSet1 = setLoader:load()
+            local defaultSet2 = setLoader:load()
+            
+            expect(defaultSet1).to.be.ok()
+            expect(defaultSet2).to.be.ok()
+            expect(defaultSet1).never.to.be.equal(defaultSet2)
         end)
     end)
     
