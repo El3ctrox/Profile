@@ -1,0 +1,16 @@
+{
+  "name": "Profile",
+  "tree": {
+    "$className": "DataModel",
+    
+    "ReplicatedStorage": {
+      "Packages": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true,
+        "$path": "Packages",
+        
+        "Profiler": { "$path": "src" }
+      }
+    }
+  }
+}
