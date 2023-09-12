@@ -2,7 +2,7 @@
 
 --// Packages
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local wrapper = require(ReplicatedStorage.Packages.Wrappers)
+local wrapper = require(ReplicatedStorage.Packages.Wrapper)
 
 -- local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
 type ProfileStore = table   -- ProfileService.ProfileStore
@@ -32,7 +32,7 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
     
     local self = wrapper(instance)
     
-    local dataLoader = DataLoader.dict()
+    local dataLoader = DataLoader.struct{}
     local updateHandlers = {} :: { [string]: (globalUpdate: GlobalUpdate) -> () }
     local globalUpdates = {} :: { [number]: GlobalUpdate }
     local loadedProfile: Profile?
@@ -171,7 +171,7 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
         
         return Promise.try(function()
             
-            assert(loadedProfile and not self:isAtive(), `profile must to be viewing`)
+            assert(loadedProfile and not self:isActive(), `profile must to be viewing`)
             
             loadedProfile:OverwriteAsync()
         end)
