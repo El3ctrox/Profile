@@ -1,5 +1,5 @@
 {
-  "name": "Profile",
+  "name": "ProfileStore",
   "tree": {
     "$className": "DataModel",
     
