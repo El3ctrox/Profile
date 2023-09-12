@@ -128,7 +128,7 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
             assert(loadedProfile, `has not possible load profile({self})`)
             handleGlobalUpdates(loadedProfile)
             
-            self.data = loadedProfile.Data
+            self.data = dataLoader:load(loadedProfile.Data)
             resolve(self.data)
         end)
     end
@@ -141,8 +141,8 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
             loadedProfile = profileStore:ViewProfileAsync(profileEntry, version)
             assert(loadedProfile, `hasnt possible preview profile({self})`)
             
-            self.data = loadedProfile.Data
-            return self.data
+            self.data = dataLoader:load(loadedProfile.Data)
+            resolve(self.data)
         end)
     end
     function self:getDataAsync(): Promise
@@ -152,7 +152,7 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
             if not loadedProfile then self:previewAsync():expect() end
             assert(loadedProfile)
             
-            return loadedProfile.Data
+            resolve(self.data)
         end)
     end
     
