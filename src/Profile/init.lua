@@ -134,11 +134,16 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
     end
     function self:previewAsync(version: string?): Promise
         
-        return Promise.try(function()
+        return Promise.new(function(resolve, reject, onCancel)
+            
+            local hasCancelled = false
+            onCancel(function() hasCancelled = true end)
             
             assert(not self:isActive(), `unable to preview a active profile`)
             
             loadedProfile = profileStore:ViewProfileAsync(profileEntry, version)
+            if hasCancelled then return end
+            
             assert(loadedProfile, `hasnt possible preview profile({self})`)
             
             self.data = dataLoader:load(loadedProfile.Data)
@@ -147,9 +152,15 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
     end
     function self:getDataAsync(): Promise
         
-        return Promise.try(function()
+        return Promise.new(function(resolve, reject, onCancel)
             
-            if not loadedProfile then self:previewAsync():expect() end
+            if not loadedProfile then
+                
+                local promise = self:previewAsync()
+                onCancel(function() promise:cancel() end)
+                
+                promise:expect()
+            end
             assert(loadedProfile)
             
             resolve(self.data)
