@@ -5,11 +5,15 @@
     
     "ReplicatedStorage": {
       "Packages": {
-        "$className": "Folder",
         "$ignoreUnknownInstances": true,
+        "$className": "Folder",
         "$path": "Packages",
         
-        "Profiler": { "$path": "src" }
+        "_Index": {
+          "$ignoreUnknownInstances": true,
+          "$className": "Folder"
+        },
+        "ProfileStore": { "$path": "src" }
       }
     }
   }
