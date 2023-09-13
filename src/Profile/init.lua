@@ -33,12 +33,14 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
     local self = wrapper(instance)
     
     local dataLoader = DataLoader.struct{}
+    local dataHandler = dataLoader:handle(instance)
+    
     local updateHandlers = {} :: { [string]: (globalUpdate: GlobalUpdate) -> () }
     local globalUpdates = {} :: { [number]: GlobalUpdate }
     local loadedProfile: Profile?
     
     self.globalUpdate = updateHandlers
-    self.dataHandler = dataLoader:handle(instance)
+    self.dataHandler = dataHandler
     self.dataLoader = dataLoader
     self.data = nil :: table?
     
@@ -128,7 +130,7 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
             assert(loadedProfile, `has not possible load profile({self})`)
             handleGlobalUpdates(loadedProfile)
             
-            self.data = dataLoader:load(loadedProfile.Data)
+            self.data = dataHandler:load(loadedProfile.Data)
             resolve(self.data)
         end)
     end
@@ -146,7 +148,7 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
             
             assert(loadedProfile, `hasnt possible preview profile({self})`)
             
-            self.data = dataLoader:load(loadedProfile.Data)
+            self.data = dataHandler:load(loadedProfile.Data)
             resolve(self.data)
         end)
     end
