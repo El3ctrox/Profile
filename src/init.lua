@@ -46,6 +46,14 @@ function ProfileStore.new(profileStoreName: string)
         
         return profile
     end
+    function self:new(profileEntry: string|any): Profile
+        
+        local instance = Instance.new("Folder")
+        instance.Name = tostring(profileEntry)
+        
+        return self:wrap(instance, profileEntry)
+    end
+    
     function self:find(instance: Instance): Profile?
         
         return profiles[instance]
