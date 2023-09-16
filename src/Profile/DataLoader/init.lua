@@ -142,7 +142,7 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
     end
     
     --// End
-    return self
+    return self, meta
 end
 
 function DataLoader.array<loadedElement, serializedElement>(
