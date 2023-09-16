@@ -132,13 +132,13 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
     end
     
     --// Meta
-    function self:__tostring()
+    function meta:__tostring()
         
         return `DataLoader.{self.kind}(`
-            ..(if self.canCorrect then "can correct" else "abort")..", "
-            ..(if self.canPanic then "can panic" else "quiet")..", "
-            ..(if self.defaultData then tostring(self:getDefaultData()) else "discart")
-            ..')'
+            .."should "..(if self.canCorrect then "correct" else "abort")..", "
+            .."should "..(if self.canPanic then "panic" else "be quiet")..", "
+            .."default: "..(tostring(self:getDefaultData()))
+            ..")"
     end
     
     --// End
