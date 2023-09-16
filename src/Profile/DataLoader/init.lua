@@ -13,7 +13,7 @@ local dataLoaders = setmetatable({}, { __mode = "k" })
 --// Local Functions
 local function xtypeof(value: any): string
     
-    return if typeof(value) == "table" then rawget(value, "type") else typeof(value)
+    return if typeof(value) == "table" then rawget(value, "type") or "table" else typeof(value)
 end
 
 --// Functions
