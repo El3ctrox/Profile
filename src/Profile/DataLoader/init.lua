@@ -24,9 +24,9 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
     local handler: DataHandler?
     
     self.defaultData = defaultData
+    self.isOptional = false
     self.isUnique = false
     
-    self.isOptional = false
     self.canCorrect = false
     self.canPanic = false
     
@@ -57,22 +57,6 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
         return if self.isUnique
             then table.clone(self.defaultData)
             else self.defaultData
-    end
-    
-    function self:handle(container: Instance?): DataHandler
-        
-        container = container or Instance.new("Folder")
-        assert(not handler, `already handled`)
-        
-        handler = DataHandler.wrap(container, self)
-        self:_wrapHandler(handler)
-        
-        dataLoaders[container] = self
-        return handler
-    end
-    function self:getHandler(): DataHandler
-        
-        return handler
     end
     
     function self:enableCorrection(): DataLoader<loaded, serialized>
@@ -142,6 +126,22 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
     function self:save(data: loaded): serialized
         
         return self:serialize(data)
+    end
+    
+    function self:handle(container: Instance?): DataHandler
+        
+        container = container or Instance.new("Folder")
+        assert(not handler, `already handled`)
+        
+        handler = DataHandler.wrap(container, self)
+        self:_wrapHandler(handler)
+        
+        dataLoaders[container] = self
+        return handler
+    end
+    function self:getHandler(): DataHandler
+        
+        return handler
     end
     
     function self:_wrapHandler(_handler: DataHandler)
