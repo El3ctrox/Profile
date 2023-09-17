@@ -64,7 +64,7 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
         container = container or Instance.new("Folder")
         assert(not handler, `already handled`)
         
-        handler = DataHandler.wrap(container)
+        handler = DataHandler.wrap(container, self)
         self:_wrapHandler(handler)
         
         dataLoaders[container] = self
