@@ -283,31 +283,11 @@ function DataLoader.set<loadedKey, loadedValue, serializedKey, serializedValue>(
 end
 function DataLoader.struct<loaded>(_loaders: { [string]: any })
     
-    local self = DataLoader.new()
+    local self, meta = DataLoader.new()
     self.kind = "struct"
     
-    --// Setup
     local defaultData: loaded = {}
     local loaders = {} :: { [string]: DataLoader<any, any> }
-    
-    for index, value in _loaders do
-        
-        if xtypeof(value) == "DataLoader" then
-            
-            local loader = value
-            
-            defaultData[index] = loader.defaultData
-            loaders[index] = loader
-            self[index] = loader
-        else
-            
-            local loader = DataLoader.new(value)
-            
-            defaultData[index] = value
-            loaders[index] = loader
-            self[index] = loader
-        end
-    end
     
     --// Override Methods
     function self:check(data)
@@ -365,6 +345,42 @@ function DataLoader.struct<loaded>(_loaders: { [string]: any })
         end
         
         return data
+    end
+    
+    function self:insert(index, value)
+        
+        if xtypeof(value) == "DataLoader" then
+            
+            local loader = value
+            rawset(self, index, loader)
+            
+            defaultData[index] = loader.defaultData
+            loaders[index] = loader
+            
+            return loader
+        else
+            
+            local loader = DataLoader.new(value)
+            rawset(self, index, loader)
+            
+            defaultData[index] = value
+            loaders[index] = loader
+            
+            return loader
+        end
+    end
+    
+    --// Behaviour
+    function meta:__newindex(index, value)
+        
+        if index == "defaultData" then return rawset(self, "defaultData", value) end
+        self:insert(index, value)
+    end
+    
+    --// Setup
+    for index, value in _loaders do
+        
+        self:insert(index, value)
     end
     
     --// End
