@@ -76,6 +76,13 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
         self.canPanic = true
         return self
     end
+    
+    function self:enableDiscart(): DataLoader<loaded, serialized>
+        
+        self.defaultData = nil
+        self.isUnique = false
+        return self
+    end
     function self:optional(): DataLoader<loaded, serialized>
         
         self.isOptional = true
@@ -221,6 +228,7 @@ function DataLoader.array<loadedElement, serializedElement>(
     end
     
     --// End
+    self:setUniqueDefaultData({})
     return self
 end
 function DataLoader.set<loadedKey, loadedValue, serializedKey, serializedValue>(
@@ -302,18 +310,6 @@ function DataLoader.struct<loaded>(_loaders: { [string]: any })
     end
     
     --// Override Methods
-    local super = self.setDefaultData
-    function self:setDefaultData(_defaultData: any?)
-        
-        super(self, if _defaultData == nil then defaultData else _defaultData)
-    end
-    
-    local super = self.setUniqueDefaultData
-    function self:setUniqueDefaultData(_defaultData: Instance|table?)
-        
-        super(self, if _defaultData == nil then defaultData else _defaultData)
-    end
-    
     function self:check(data)
         
         assert(typeof(data) == "table", `table expected`)
@@ -372,6 +368,7 @@ function DataLoader.struct<loaded>(_loaders: { [string]: any })
     end
     
     --// End
+    self:setUniqueDefaultData(defaultData)
     return self
 end
 
