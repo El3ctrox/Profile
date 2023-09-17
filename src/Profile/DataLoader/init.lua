@@ -37,10 +37,19 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
         self.isUnique = true
         return self
     end
-    function self:setDefaultData(_defaultData: serialized): DataLoader<loaded, serialized>
+    function self:setDefaultData(_defaultData: serialized | (DataLoader<loaded, serialized>) -> serialized): DataLoader<loaded, serialized>
         
-        self.defaultData = _defaultData
-        self.isUnique = false
+        if typeof(_defaultData) == "function" then
+            
+            self.getDefaultData = _defaultData
+            self.defaultData = nil
+            self.isUnique = true
+        else
+            
+            self.defaultData = _defaultData
+            self.isUnique = false
+        end
+        
         return self
     end
     function self:getDefaultData(): serialized
