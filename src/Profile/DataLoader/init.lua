@@ -59,18 +59,18 @@ function DataLoader.new<loaded, serialized>(defaultData: serialized?)
             else self.defaultData
     end
     
-    function self:enableCorrection(): DataLoader<loaded, serialized>
+    function self:shouldCorrection(): DataLoader<loaded, serialized>
         
         self.canCorrect = true
         return self
     end
-    function self:enablePanic(): DataLoader<loaded, serialized>
+    function self:shouldPanic(): DataLoader<loaded, serialized>
         
         self.canPanic = true
         return self
     end
     
-    function self:enableDiscart(): DataLoader<loaded, serialized>
+    function self:shouldDiscart(): DataLoader<loaded, serialized>
         
         self.defaultData = nil
         self.isUnique = false

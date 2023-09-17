@@ -65,7 +65,7 @@ return function()
         
         it("should discart all if some miss element", function()
             
-            itemsLoader:enableDiscart()
+            itemsLoader:shouldDiscart()
             
             local data = { "armor", 5, "cavalo" }
             local items = itemsLoader:load(data)
@@ -74,7 +74,7 @@ return function()
         end)
         it("should discart when miss data", function()
             
-            itemsLoader:enableDiscart()
+            itemsLoader:shouldDiscart()
             
             local color = itemsLoader:load("not a array")
             expect(color).to.be.equal(nil)
@@ -82,8 +82,8 @@ return function()
         
         it("should correct discarting miss elements", function()
             
-            itemsLoader:enableCorrection()
-            itemsLoader.element:enableDiscart()
+            itemsLoader:shouldCorrect()
+            itemsLoader.element:shouldDiscart()
             
             local data = { "armor", 5, "cavalo" }
             local items = itemsLoader:load(data)
@@ -93,8 +93,8 @@ return function()
         end)
         it("should correct converting miss elements", function()
             
-            itemsLoader:enableCorrection()
-            itemsLoader.element:enableCorrection()
+            itemsLoader:shouldCorrect()
+            itemsLoader.element:shouldCorrect()
             
             local data = { "armor", 5, "cavalo" }
             local items = itemsLoader:load(data)
@@ -143,7 +143,7 @@ return function()
         
         it("should discart when miss field", function()
             
-            itemLoader:enableDiscart()
+            itemLoader:shouldDiscart()
             
             local data = { name = nil, level = 3, color = { R = 0, G = 0, B = 0 } }
             local item = itemLoader:load(data)
@@ -152,7 +152,7 @@ return function()
         end)
         it("shouldnt discart when miss optional field", function()
             
-            itemLoader:enableDiscart()
+            itemLoader:shouldDiscart()
             itemLoader.name:optional()
             
             local data = { name = nil, level = 3, color = { R = 0, G = 0, B = 0 } }
@@ -162,7 +162,7 @@ return function()
         end)
         it("should discart when miss data", function()
             
-            itemLoader:enableDiscart()
+            itemLoader:shouldDiscart()
             
             local item = itemLoader:load("not a table")
             expect(item).to.be.equal(nil)
@@ -170,7 +170,7 @@ return function()
         
         it("should correct filling missing fields", function()
             
-            itemLoader:enableCorrection()
+            itemLoader:shouldCorrect()
             
             local data = { name = "sword", level = 1 }
             local item = itemLoader:load(data)
@@ -188,7 +188,7 @@ return function()
         end)
         it("should correct converting missing fields", function()
             
-            itemLoader:enableCorrection()
+            itemLoader:shouldCorrect()
             
             local data = { name = "potion", level = "3", color = { R = 0, G = 0, B = 0 } }
             local item = itemLoader:load(data)
@@ -268,7 +268,7 @@ return function()
         
         it("should discart all if some miss pair", function()
             
-            setLoader:enableDiscart()
+            setLoader:shouldDiscart()
             
             local data = {
                 { index = 1, value = "sword" },
@@ -282,7 +282,7 @@ return function()
         end)
         it("should discart when miss data", function()
             
-            setLoader:enableDiscart()
+            setLoader:shouldDiscart()
             
             local set = setLoader:load("not a set")
             expect(set).to.be.equal(nil)
@@ -290,8 +290,8 @@ return function()
         
         it("should correct converting miss pairs", function()
             
-            setLoader:enableCorrection()
-            setLoader.pair:enableCorrection()
+            setLoader:shouldCorrect()
+            setLoader.pair:shouldCorrect()
             
             local data = {
                 { index = 1, value = "sword" },
@@ -313,8 +313,8 @@ return function()
         end)
         it("should correct discarting miss pairs", function()
             
-            setLoader:enableCorrection()
-            setLoader.pair:enableDiscart()
+            setLoader:shouldCorrect()
+            setLoader.pair:shouldDiscart()
             
             local data = {
                 { index = 1, value = "sword" },
@@ -364,7 +364,7 @@ return function()
         
         it("should discart when miss field", function()
             
-            colorLoader:enableDiscart()
+            colorLoader:shouldDiscart()
             
             local data = { R = "255", G = 255, B = 0 }
             local color = colorLoader:load(data)
@@ -373,7 +373,7 @@ return function()
         end)
         it("should discart when miss data", function()
             
-            colorLoader:enableDiscart()
+            colorLoader:shouldDiscart()
             
             local color = colorLoader:load("not a color")
             expect(color).to.be.equal(nil)
@@ -381,7 +381,7 @@ return function()
         
         it("should correct filling missing fields", function()
             
-            colorLoader:enableCorrection()
+            colorLoader:shouldCorrect()
             
             local data = { R = 50, G = 255 }
             local color = colorLoader:load(data)
@@ -391,7 +391,7 @@ return function()
         end)
         it("should correct converting miss fields", function()
             
-            colorLoader:enableCorrection()
+            colorLoader:shouldCorrect()
             
             local data = { R = "255", G = 50, B = 10 }
             local color = colorLoader:load(data)
