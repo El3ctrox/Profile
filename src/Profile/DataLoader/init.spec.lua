@@ -29,52 +29,9 @@ return function()
     
     local DataLoader = require(script.Parent)
     
-    describe("Color3 data loader", function()
-        
-        local colorLoader = DataLoader.color()
-            :enableCorrection()
-        
-        it("should load RGB(2, 3, 4)", function()
-            
-            local data = { R = 2, G = 3, B = 4 }
-            local color = colorLoader:load(data)
-            
-            expect(typeof(color)).to.be.equal("Color3")
-            expect(color.R*255).to.be.near(data.R, .1)
-            expect(color.G*255).to.be.near(data.G, .1)
-            expect(color.B*255).to.be.near(data.B, .1)
-        end)
-        it("should fill missing fields", function()
-            
-            local data = { R = 50, G = 255 }
-            local color = colorLoader:load(data)
-            
-            expect(typeof(color)).to.be.equal("Color3")
-            expect(color.B).to.be.equal(0)
-            expect(data.B).to.be.equal(0)
-        end)
-        it("should convert missing fields", function()
-            
-            local data = { R = "255", G = 50, B = 10 }
-            local color = colorLoader:load(data)
-            
-            expect(typeof(color)).to.be.equal("Color3")
-            expect(color.R*255).to.be.near(255, .1)
-            expect(color.G*255).to.be.near(50, .1)
-            expect(color.B*255).to.be.near(10, .1)
-            
-            expect(data.R).to.be.equal(255)
-        end)
-        it("should discart without default data", function()
-            
-            local color = colorLoader:load(nil)
-            expect(color).to.be.equal(nil)
-        end)
-    end)
-    
     describe("array data loader", function()
         
-        local itemsLoader = DataLoader.array(DataLoader.string())
+        local itemsLoader = DataLoader.array(DataLoader.string("unknown"))
         
         it("should load all elements", function()
             
@@ -83,42 +40,20 @@ return function()
             
             expect(match(items, { "sword", "apple" })).to.be.ok()
         end)
-        it("should discart all if some bad element", function()
+        
+        it("should load default data when miss element", function()
             
-            local data = { "armor", 5, "cavalo" }
+            local data = { "string", 10, "cavalo" }
             local items = itemsLoader:load(data)
             
-            expect(items).to.be.equal(nil)
+            expect(match(items, {})).to.be.ok()
         end)
-        
-        it("should discart just bad elements", function()
+        it("should load default data when miss data", function()
             
-            itemsLoader:enableCorrection()
-            
-            local data = { "armor", 5, "cavalo" }
-            local items = itemsLoader:load(data)
-            
-            expect(match(items, { "armor", "cavalo" })).to.be.ok()
-            expect(match(data, { "armor", "cavalo" })).to.be.ok()
-        end)
-        it("should discart when miss data", function()
-            
-            itemsLoader:enableCorrection()
-            
-            local color = itemsLoader:load("not a array")
-            expect(color).to.be.equal(nil)
-        end)
-        
-        it("should load default data", function()
-            
-            itemsLoader:setUniqueDefaultData({})
-            
-            local items = itemsLoader:load(nil)
+            local items = itemsLoader:load("not a array")
             expect(match(items, {})).to.be.ok()
         end)
         it("shouldnt give same default data address", function()
-            
-            itemsLoader:setUniqueDefaultData({})
             
             local defaultItems1 = itemsLoader:load()
             local defaultItems2 = itemsLoader:load()
@@ -127,13 +62,165 @@ return function()
             expect(defaultItems2).to.be.ok()
             expect(defaultItems1).never.to.be.equal(defaultItems2)
         end)
+        
+        it("should discart all if some miss element", function()
+            
+            itemsLoader:enableDiscart()
+            
+            local data = { "armor", 5, "cavalo" }
+            local items = itemsLoader:load(data)
+            
+            expect(match(items, {})).to.be.ok()
+        end)
+        it("should discart when miss data", function()
+            
+            itemsLoader:enableDiscart()
+            
+            local color = itemsLoader:load("not a array")
+            expect(color).to.be.equal(nil)
+        end)
+        
+        it("should correct discarting miss elements", function()
+            
+            itemsLoader:enableCorrection()
+            itemsLoader.element:enableDiscart()
+            
+            local data = { "armor", 5, "cavalo" }
+            local items = itemsLoader:load(data)
+            
+            expect(match(items, { "armor", "cavalo" })).to.be.ok()
+            expect(match(data, { "armor", "cavalo" })).to.be.ok()
+        end)
+        it("should correct converting miss elements", function()
+            
+            itemsLoader:enableCorrection()
+            itemsLoader.element:enableCorrection()
+            
+            local data = { "armor", 5, "cavalo" }
+            local items = itemsLoader:load(data)
+            
+            expect(match(items, { "armor", "5", "cavalo" })).to.be.ok()
+            expect(match(data, { "armor", "5", "cavalo" })).to.be.ok()
+        end)
+    end)
+    describe("struct data loader", function()
+        
+        local itemLoader = DataLoader.struct{
+            name = DataLoader.string("unknown"),
+            level = DataLoader.integer(1),
+            color = DataLoader.color(Color3.new())
+        }
+        
+        it("should load all fields", function()
+            
+            local data = { name = "sword", level = 2, color = { R = 0, G = 255, B = 50 } }
+            local item = itemLoader:load(data)
+            
+            expect(match(item, { name = "sword", level = 2, color = Color3.fromRGB(0, 255, 50) }))
+        end)
+        
+        it("should load default data when miss field", function()
+            
+            local data = { name = nil, level = 3, color = { R = 0, G = 0, B = 0 } }
+            local item = itemLoader:load(data)
+            
+            expect(match(item, { level = 1, color = Color3.new() })).to.be.ok()
+        end)
+        it("should load default data when miss data", function()
+            
+            local item = itemLoader:load("not a table")
+            expect(match(item, { name = "unknown", level = 1, color = Color3.new() })).to.be.ok()
+        end)
+        it("shouldnt give same default data address", function()
+            
+            local defaultItem1 = itemLoader:load(nil)
+            local defaultItem2 = itemLoader:load(nil)
+            
+            expect(defaultItem1).to.be.ok()
+            expect(defaultItem2).to.be.ok()
+            expect(defaultItem1).never.to.be.equal(defaultItem2)
+        end)
+        
+        it("should discart when miss field", function()
+            
+            itemLoader:enableDiscart()
+            
+            local data = { name = nil, level = 3, color = { R = 0, G = 0, B = 0 } }
+            local item = itemLoader:load(data)
+            
+            expect(item).to.be.equal(nil)
+        end)
+        it("shouldnt discart when miss optional field", function()
+            
+            itemLoader:enableDiscart()
+            itemLoader.name:optional()
+            
+            local data = { name = nil, level = 3, color = { R = 0, G = 0, B = 0 } }
+            local item = itemLoader:load(data)
+            
+            expect(match(item, { level = 3, color = Color3.new() })).to.be.ok()
+        end)
+        it("should discart when miss data", function()
+            
+            itemLoader:enableDiscart()
+            
+            local item = itemLoader:load("not a table")
+            expect(item).to.be.equal(nil)
+        end)
+        
+        it("should correct filling missing fields", function()
+            
+            itemLoader:enableCorrection()
+            
+            local data = { name = "sword", level = 1 }
+            local item = itemLoader:load(data)
+            
+            expect(match(item, {
+                name = "sword",
+                level = 1,
+                color = Color3.new()
+            })).to.be.ok()
+            expect(match(data, {
+                name = "sword",
+                level = 1,
+                color = { R = 0, G = 0, B = 0 }
+            })).to.be.ok()
+        end)
+        it("should correct converting missing fields", function()
+            
+            itemLoader:enableCorrection()
+            
+            local data = { name = "potion", level = "3", color = { R = 0, G = 0, B = 0 } }
+            local item = itemLoader:load(data)
+            
+            expect(match(item, { name = "potion", level = 3, color = Color3.new() })).to.be.ok()
+        end)
+        
+        it("should add a field", function()
+            
+            itemLoader.damage = 0
+            
+            local item = itemLoader:load{ damage = nil, name = "sword" }
+            
+            expect(match(item, { damage = 0, name = "sword", level = 1, color = Color3.new() })).to.be.ok()
+        end)
+        it("should add a loader", function()
+            
+            itemLoader.owners = DataLoader.array(
+                DataLoader.integer()
+            )
+            
+            local item = itemLoader:load{ owners = nil, name = "sword" }
+            
+            expect(match(item, { owners = {}, damage = 0, name = "sword", level = 1, color = Color3.new() })).to.be.ok()
+        end)
     end)
     
     describe("set data loader", function()
         
         local setLoader = DataLoader.set(
             DataLoader.integer(),
-            DataLoader.string()
+            DataLoader.string("unknown")
         )
         
         it("should load data", function()
@@ -149,9 +236,39 @@ return function()
                 [1] = "sword",
                 [3] = "apple",
                 [10] = "armor"
-            }))
+            })).to.be.ok()
         end)
-        it("should discart all if some bad pair", function()
+        
+        it("should load default data when miss pair", function()
+            
+            local data = {
+                { index = 1, value = "sword" },
+                { index = "maxItems", value = 5 },
+                { index = 10, value = "armor" },
+                { index = 15, value = 15 },
+            }
+            local inventory = setLoader:load(data)
+            
+            expect(match(inventory, {})).to.be.ok()
+        end)
+        it("should load default data when miss data", function()
+            
+            local set = setLoader:load("not a set")
+            expect(match(set, {})).to.be.ok()
+        end)
+        it("shouldnt give same default data address", function()
+            
+            local defaultSet1 = setLoader:load()
+            local defaultSet2 = setLoader:load()
+            
+            expect(defaultSet1).to.be.ok()
+            expect(defaultSet2).to.be.ok()
+            expect(defaultSet1).never.to.be.equal(defaultSet2)
+        end)
+        
+        it("should discart all if some miss pair", function()
+            
+            setLoader:enableDiscart()
             
             local data = {
                 { index = 1, value = "sword" },
@@ -163,133 +280,124 @@ return function()
             
             expect(inventory).to.be.equal(nil)
         end)
+        it("should discart when miss data", function()
+            
+            setLoader:enableDiscart()
+            
+            local set = setLoader:load("not a set")
+            expect(set).to.be.equal(nil)
+        end)
         
-        it("should discart bad indexes", function()
+        it("should correct converting miss pairs", function()
             
             setLoader:enableCorrection()
+            setLoader.pair:enableCorrection()
             
             local data = {
                 { index = 1, value = "sword" },
-                { index = "maxItems", value = 5 },
+                { index = "2", value = true },
                 { index = 10, value = "armor" },
-                { index = 15, value = 15 },
+            }
+            local inventory = setLoader:load(data)
+            
+            expect(match(inventory, {
+                [1] = "sword",
+                [2] = "true",
+                [10] = "armor",
+            })).to.be.ok()
+            expect(match(data, {
+                { index = 1, value = "sword" },
+                { index = 2, value = "true" },
+                { index = 10, value = "armor" },
+            })).to.be.ok()
+        end)
+        it("should correct discarting miss pairs", function()
+            
+            setLoader:enableCorrection()
+            setLoader.pair:enableDiscart()
+            
+            local data = {
+                { index = 1, value = "sword" },
+                { index = 10, value = "armor" },
+                { index = "maxItems", value = 5 },
             }
             local inventory = setLoader:load(data)
             
             expect(match(inventory, {
                 [1] = "sword",
                 [10] = "armor"
-            }))
+            })).to.be.ok()
             expect(match(data, {
                 { index = 1, value = "sword" },
                 { index = 10, value = "armor" },
-            }))
-        end)
-        it("should discart when miss data", function()
-            
-            setLoader:enableCorrection()
-            
-            local set = setLoader:load("not a set")
-            expect(set).to.be.equal(nil)
-        end)
-        
-        it("should load default data", function()
-            
-            setLoader:setUniqueDefaultData({})
-            
-            local set = setLoader:load(nil)
-            expect(match(set, {})).to.be.ok()
-        end)
-        it("shouldnt give same default data address", function()
-            
-            setLoader:setUniqueDefaultData({})
-            
-            local defaultSet1 = setLoader:load()
-            local defaultSet2 = setLoader:load()
-            
-            expect(defaultSet1).to.be.ok()
-            expect(defaultSet2).to.be.ok()
-            expect(defaultSet1).never.to.be.equal(defaultSet2)
+            })).to.be.ok()
         end)
     end)
-    
-    describe("struct data loader", function()
+    describe("Color3 data loader", function()
         
-        local itemLoader = DataLoader.struct{
-            name = DataLoader.string(),
-            level = DataLoader.integer(1),
-            color = DataLoader.color(Color3.new())
-        }
+        local colorLoader = DataLoader.color(Color3.new(0, 1, 0))
         
-        it("should load all fields", function()
+        it("should load RGB(2, 3, 4)", function()
             
-            local data = { name = "sword", level = 2, color = { R = 0, G = 255, B = 50 } }
-            local item = itemLoader:load(data)
+            local data = { R = 2, G = 3, B = 4 }
+            local color = colorLoader:load(data)
             
-            expect(match(item, { name = "sword", level = 2, color = Color3.fromRGB(0, 255, 50) }))
-        end)
-        it("should discart all if some bad field", function()
-            
-            local data = { name = "sword", level = 1 }
-            local item = itemLoader:load(data)
-            
-            expect(item).to.be.equal(nil)
+            expect(typeof(color)).to.be.equal("Color3")
+            expect(color.R*255).to.be.near(data.R, .1)
+            expect(color.G*255).to.be.near(data.G, .1)
+            expect(color.B*255).to.be.near(data.B, .1)
         end)
         
-        it("should fill missing fields", function()
+        it("should load default data when miss field", function()
             
-            itemLoader:enableCorrection()
+            local data = { R = 255, G = nil, B = 0 }
+            local color = colorLoader:load(data)
             
-            local data = { name = "sword", level = 1 }
-            local item = itemLoader:load(data)
-            
-            expect(match(item, {
-                name = "sword",
-                level = 1,
-                color = Color3.new()
-            }))
-            expect(match(data, {
-                name = "sword",
-                level = 1,
-                color = { R = 0, G = 0, B = 0 }
-            }))
+            expect(color).to.be.equal(Color3.new(0, 1, 0))
         end)
-        it("should discart when miss a required field", function()
+        it("should load default data when miss data", function()
             
-            itemLoader:enableCorrection()
+            local color = colorLoader:load("not a color")
             
-            local data = { level = 3, color = { R = 0, G = 0, B = 0 } }
-            local item = itemLoader:load(data)
+            expect(color).to.be.equal(Color3.new(0, 1, 0))
+        end)
+        
+        it("should discart when miss field", function()
             
-            expect(item).to.be.equal(nil)
+            colorLoader:enableDiscart()
+            
+            local data = { R = "255", G = 255, B = 0 }
+            local color = colorLoader:load(data)
+            
+            expect(color).to.be.equal(nil)
         end)
         it("should discart when miss data", function()
             
-            itemLoader:enableCorrection()
+            colorLoader:enableDiscart()
             
-            local item = itemLoader:load("not a table")
-            expect(item).to.be.equal(nil)
+            local color = colorLoader:load("not a color")
+            expect(color).to.be.equal(nil)
         end)
         
-        it("should consider fields to inferring default data", function()
+        it("should correct filling missing fields", function()
             
-            itemLoader:setUniqueDefaultData()
-            itemLoader.name:optional()
+            colorLoader:enableCorrection()
             
-            local item = itemLoader:load(nil)
-            expect(match(item, { level = 1, color = Color3.new() })).to.be.ok()
+            local data = { R = 50, G = 255 }
+            local color = colorLoader:load(data)
+            
+            expect(color).to.be.equal(Color3.fromRGB(50, 255, 0))
+            expect(data.B).to.be.equal(0)
         end)
-        it("shouldnt give same default data address", function()
+        it("should correct converting miss fields", function()
             
-            itemLoader:setUniqueDefaultData()
-            itemLoader.name:optional()
+            colorLoader:enableCorrection()
             
-            local defaultItem1 = itemLoader:load()
-            local defaultItem2 = itemLoader:load()
+            local data = { R = "255", G = 50, B = 10 }
+            local color = colorLoader:load(data)
             
-            expect(defaultItem1).to.be.ok()
-            expect(defaultItem2).to.be.ok()
-            expect(defaultItem1).never.to.be.equal(defaultItem2)
+            expect(color).to.be.equal(Color3.fromRGB(255, 50, 10))
+            expect(data.R).to.be.equal(255)
         end)
     end)
 end
