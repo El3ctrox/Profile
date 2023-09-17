@@ -492,7 +492,7 @@ function DataLoader.color(default: Color3?): DataLoader<Color3, { R: number, G: 
     end
     
     --// End
-    if default then self:setDefaultData{ R = default.R, G = default.G, B = default.B } end
+    if default then self:setDefaultData{ R = math.floor(default.R*255), G = math.floor(default.G*255), B = math.floor(default.B*255) } end
     return self
 end
 
