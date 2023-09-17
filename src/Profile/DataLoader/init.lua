@@ -167,7 +167,7 @@ function DataLoader.array<loadedElement, serializedElement>(
     self.min = minLength
     self.max = maxLength
     
-    self.elements = elementLoader
+    self.element = elementLoader
     
     --// Override Methods
     function self:check(data)
@@ -237,18 +237,18 @@ function DataLoader.set<loadedKey, loadedValue, serializedKey, serializedValue>(
 ): DataLoader<{[loadedKey]: loadedValue}, {{ index: serializedKey, value: serializedValue }}>
     
     type set = { [loadedKey]: loadedValue }
-    type entry = { index: serializedKey, value: serializedValue }
-    type data = { entry }
+    type pair = { index: serializedKey, value: serializedValue }
+    type data = { pair }
     
-    local self = DataLoader.array(
-        DataLoader.struct{
-            index = indexLoader,
-            value = valueLoader,
-        }
-    )
+    local pairLoader = DataLoader.struct{
+        index = indexLoader,
+        value = valueLoader,
+    }
+    local self = DataLoader.array(pairLoader)
     self.kind = "set"
     self.index = indexLoader
     self.value = valueLoader
+    self.pair = pairLoader
     
     --// Override Methods
     function self:deserialize(data: data): set
