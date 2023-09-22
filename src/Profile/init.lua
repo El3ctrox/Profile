@@ -2,6 +2,7 @@
 
 --// Packages
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local structLoader = require(ReplicatedStorage.Packages.DataLoader.struct)
 local wrapper = require(ReplicatedStorage.Packages.Wrapper)
 
 -- local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
@@ -13,8 +14,6 @@ type Promise = table    -- Promise.Promise
 
 local GlobalUpdate = require(script.GlobalUpdate)
 type GlobalUpdate = GlobalUpdate.GlobalUpdate
-
-local DataLoader = require(script.DataLoader)
 
 type table = { [string]: any }
 
@@ -32,7 +31,7 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
     
     local self = wrapper(instance)
     
-    local dataLoader = DataLoader.struct{}
+    local dataLoader = structLoader{}
     local dataHandler = dataLoader:handle(instance)
     
     local updateHandlers = {} :: { [string]: (globalUpdate: GlobalUpdate) -> () }
