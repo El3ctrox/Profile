@@ -162,7 +162,6 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
                 
                 promise:expect()
             end
-            assert(loadedProfile)
             
             resolve(self.data)
         end)
