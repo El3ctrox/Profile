@@ -220,7 +220,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         return loadingProfile and loadingProfile:getStatus() == Promise.Status.Resolved
     end
     
-    function self:handle(container: Instance)
+    function self:wrapHandler(container: Instance)
         
         local handler = dataLoader:handle(container)
         
