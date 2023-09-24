@@ -175,9 +175,15 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         
         return Promise.try(function()
             
-            assert(loadedProfile and not self:isActive(), `profile must to be viewing`)
+            assert(loadedProfile, `profile must to be loaded`)
             
-            loadedProfile:OverwriteAsync()
+            if loadedProfile:IsActive() then
+                
+                loadedProfile:Save()
+            else
+                
+                loadedProfile:OverwriteAsync()
+            end
         end)
     end
     function self:releaseAsync(): Promise
