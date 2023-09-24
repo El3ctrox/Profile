@@ -38,29 +38,25 @@ function ProfileStore.new(profileStoreName: string)
         profileEntry = tostring(profileEntry)
         return profileStore:ProfileVersionQuery(profileEntry, sortDirection, minimumDate, maximumDate)
     end
-    
-    function self:wrap(instance: Instance, profileEntry: string|any): Profile
+    function self:find(profileEntry: string|any): Profile?
         
-        local profile = Profile.wrap(instance, profileStore, profileEntry)
-        profiles[instance] = profile
+        profileEntry = tostring(profileEntry)
+        return profiles[profileEntry]
+    end
+    function self:get(profileEntry: string|any): Profile
+        
+        return self:find(profileEntry) or self:_new(profileEntry)
+    end
+    
+    --// Protected
+    function self:_new(profileEntry: string|any): Profile
+        
+        profileEntry = tostring(profileEntry)
+        
+        local profile = Profile.new(profileEntry, profileStore)
+        profiles[profileEntry] = profile
         
         return profile
-    end
-    function self:new(profileEntry: string|any): Profile
-        
-        local instance = Instance.new("Folder")
-        instance.Name = tostring(profileEntry)
-        
-        return self:wrap(instance, profileEntry)
-    end
-    
-    function self:find(instance: Instance): Profile?
-        
-        return profiles[instance]
-    end
-    function self:get(instance: Instance, profileEntry: string): Profile
-        
-        return self:find(instance) or self:wrap(instance, profileEntry)
     end
     
     --// End

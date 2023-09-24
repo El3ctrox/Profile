@@ -3,7 +3,6 @@
 --// Packages
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local structLoader = require(ReplicatedStorage.Packages.DataLoader.struct)
-local wrapper = require(ReplicatedStorage.Packages.Wrapper)
 
 -- local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
 type ProfileStore = table   -- ProfileService.ProfileStore
@@ -19,27 +18,22 @@ type table = { [string]: any }
 
 --// Component
 local Profile = {}
-local profiles = setmetatable({}, { __mode = "k" })
 
 --// Functions
-function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEntry: string|any)
+function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     
     profileEntry = tostring(profileEntry)
     
-    local currentInstanceProfile = Profile.find(instance)
-    assert(not currentInstanceProfile, `this instance({instance}) already have a loaded profile({currentInstanceProfile})`)
-    
-    local self = wrapper(instance)
+    local meta = { __metatable = "locked" }
+    local self = setmetatable({ type = "Profile" }, meta)
     
     local dataLoader = structLoader{}
-    local dataHandler = dataLoader:handle(instance)
-    
+    local dataHandlers = setmetatable({}, { __mode = "k" })
     local updateHandlers = {} :: { [string]: (globalUpdate: GlobalUpdate) -> () }
     local globalUpdates = {} :: { [number]: GlobalUpdate }
     local loadedProfile: Profile?
     
     self.globalUpdate = updateHandlers
-    self.dataHandler = dataHandler
     self.dataLoader = dataLoader
     self.data = nil :: table?
     
@@ -129,8 +123,13 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
             assert(loadedProfile, `has not possible load profile({self})`)
             handleGlobalUpdates(loadedProfile)
             
-            self.data = dataHandler:load(loadedProfile.Data)
-            resolve(self.data)
+            local data = loadedProfile.Data
+            local loadedData = dataLoader:load(data)
+            
+            for _,dataHandler in dataHandlers do dataHandler:set(loadedData) end
+            self.data = data
+            
+            resolve(data)
         end)
     end
     function self:previewAsync(version: string?): Promise
@@ -147,8 +146,13 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
             
             assert(loadedProfile, `hasnt possible preview profile({self})`)
             
-            self.data = dataHandler:load(loadedProfile.Data)
-            resolve(self.data)
+            local data = loadedProfile.Data
+            local loadedData = dataLoader:load(data)
+            
+            for _,dataHandler in dataHandlers do dataHandler:set(loadedData) end
+            self.data = data
+            
+            resolve(data)
         end)
     end
     function self:getDataAsync(): Promise
@@ -210,13 +214,24 @@ function Profile.wrap(instance: Instance, profileStore: ProfileStore, profileEnt
         return loadedProfile:IsActive()
     end
     
-    --// End
-    profiles[instance] = self
-    return self
-end
-function Profile.find(instance: Instance)
+    function self:handle(container: Instance)
+        
+        local handler = dataLoader:handle(container)
+        
+        dataHandlers[container] = handler
+        return handler
+    end
+    function self:findHandler(container: Instance)
+        
+        return dataHandlers[container]
+    end
+    function self:getHandler(container: Instance)
+        
+        return self:findHandler(container) or self:handle(container)
+    end
     
-    return profiles[instance]
+    --// End
+    return self
 end
 
 --// End
