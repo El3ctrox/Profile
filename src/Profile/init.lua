@@ -210,14 +210,14 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         
         return profileStore:ProfileVersionQuery(profileEntry, sortDirection, minimumDate, maximumDate)
     end
-    function self:getProfile(): Profile?
-        
-        return loadedProfile
-    end
     function self:isActive(): boolean
         
         if not loadedProfile then return false end
         return loadedProfile:IsActive()
+    end
+    function self:isLoaded(): boolean
+        
+        return loadingProfile and loadingProfile:getStatus() == Promise.Status.Resolved
     end
     
     function self:handle(container: Instance)
