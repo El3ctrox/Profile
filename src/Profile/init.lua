@@ -41,7 +41,10 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     self.dataLoader = dataLoader :: DataLoader
     self.dataHandler = nil :: DataHandler?
     
-    --// Methods
+    --// Utils
+    type notReleasedHandler = (placeId: number, gameJobId: string) -> "Repeat"|"Cancel"|notReleasedOption
+    type notReleasedOption = "Steal"|"ForceLoad"
+    
     local function getGlobalUpdate(updateId: number, updateData: table, activeUpdate: ActiveUpdate?): GlobalUpdate
         
         assert(loadedProfile, `profile must to be loaded`)
@@ -78,17 +81,128 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             handleLockedUpdate(update[1], update[2])
         end
     end
+    local function previewAsync(version: string?)
+        
+        return Promise.new(function(resolve, reject, onCancel)
+            
+            local hasCancelled = false
+            onCancel(function() hasCancelled = true end)
+            
+            assert(not self:isActive(), `unable to preview a active profile`)
+            loadedProfile = profileStore:ViewProfileAsync(profileEntry, version)
+            
+            assert(loadedProfile, `hasnt possible preview profile({self})`)
+            if hasCancelled then return end
+            
+            resolve(loadedProfile.data)
+        end)
+    end
+    local function activateAsync(notReleasedHandler: notReleasedOption|notReleasedHandler)
+        
+        return Promise.new(function(resolve, reject, onCancel)
+            
+            local hasCancelled = false
+            onCancel(function() hasCancelled = true end)
+            
+            loadedProfile = profileStore:LoadProfileAsync(profileEntry, notReleasedHandler)
+            
+            assert(loadedProfile, `has not possible activate profile({self})`)
+            if hasCancelled then return loadedProfile:Release() end
+            
+            resolve(loadedProfile.data)
+        end)
+    end
+    local function loadData(data)
+        
+        local loadedData = DataLoader:load(data)
+        for _,dataHandler in dataHandlers do dataHandler:set(loadedData) end
+    end
     
+    --// Caches
+    local previewingVersions = {} :: { [string]: Promise }
+    local handlingActiveProfile: Promise?
+    local loadingProfile: Promise?  -- previewing or activated profile
+    local loadingData: Promise?
+    
+    --// Cached Methods
+    function self:previewVersionAsync(version: string): Promise
+        
+        if not previewingVersions[version] then
+            
+            previewingVersions[version] = previewAsync(version)
+        end
+        
+        return previewingVersions[version]
+    end
+    function self:previewLatestAsync(): Promise
+        
+        if not loadingProfile then
+            
+            loadingProfile = previewAsync()
+            handlingActiveProfile = nil
+            loadingData = nil
+        end
+        
+        return loadingProfile
+    end
+    function self:activateAsync(notReleasedHandler: notReleasedOption|notReleasedHandler?): Promise
+        
+        if not self:isActive() then
+            
+            loadingProfile = activateAsync(notReleasedHandler)
+            loadingData = nil
+        end
+        if not loadingData then
+            
+            loadingData = loadingProfile:andThenCall(loadData)
+            handlingActiveProfile = nil
+        end
+        if not handlingActiveProfile then
+            
+            handlingActiveProfile = loadingData:tap(handleGlobalUpdates)
+        end
+        
+        return handlingActiveProfile
+    end
+    function self:refreshAsync(): Promise
+        
+        loadingProfile = self:previewLatestAsync()
+        loadingData = loadingProfile:andThenCall(loadData)
+        
+        if self:isActive() then
+            
+            loadingData:tap(handleGlobalUpdates)
+        end
+        
+        return loadingData
+    end
+    function self:loadAsync(): Promise
+        
+        if not loadingProfile then
+            
+            loadingProfile = self:previewLatestAsync()
+            loadingData = nil
+        end
+        if not loadingData then
+            
+            loadingData = loadingProfile:andThenCall(loadData)
+            handlingActiveProfile = nil
+        end
+        
+        return loadingData
+    end
+    
+    --// Methods
     function self:activateUpdate(type: string, data: table)
         
         profileStore:GlobalUpdateProfileAsync(
             profileEntry,
-            function(activeUpdate)
+            function(updateHandler)
                 
                 local safeData = table.clone(data)
                 safeData.type = type
                 
-                activeUpdate:AddActiveUpdate(safeData)
+                updateHandler:AddActiveUpdate(safeData)
             end
         )
     end
@@ -110,68 +224,6 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             assert(loadedProfile, `impossible fail: luau intellisense fix`)
             
             return loadedProfile.GlobalUpdates:GetLockedUpdates()
-        end)
-    end
-    
-    type notReleasedHandler = (placeId: number, gameJobId: string) -> "Steal"|"Repeat"|"Cancel"|"ForceLoad"
-    function self:activateAsync(notReleaseHandler: "Steal"|"ForceLoad"|notReleasedHandler?): Promise
-        
-        return Promise.new(function(resolve, reject, onCancel)
-            
-            local hasCancelled = false
-            onCancel(function() hasCancelled = true end)
-            
-            loadedProfile = profileStore:LoadProfileAsync(profileEntry, notReleaseHandler)
-            
-            assert(loadedProfile, `has not possible load profile({self})`)
-            if hasCancelled then return loadedProfile:Release() end
-            
-            local data = loadedProfile.Data
-            local loadedData = dataLoader:load(data)
-            
-            for _,dataHandler in dataHandlers do dataHandler:set(loadedData) end
-            self.data = data
-            
-            handleGlobalUpdates(loadedProfile)
-            resolve(data)
-        end)
-    end
-    function self:previewAsync(version: string?): Promise
-        
-        return Promise.new(function(resolve, reject, onCancel)
-            
-            local hasCancelled = false
-            onCancel(function() hasCancelled = true end)
-            
-            assert(not self:isActive(), `unable to preview a active profile`)
-            
-            loadedProfile = profileStore:ViewProfileAsync(profileEntry, version)
-            if hasCancelled then return end
-            
-            assert(loadedProfile, `hasnt possible preview profile({self})`)
-            
-            local data = loadedProfile.Data
-            local loadedData = dataLoader:load(data)
-            
-            for _,dataHandler in dataHandlers do dataHandler:set(loadedData) end
-            self.data = data
-            
-            resolve(data)
-        end)
-    end
-    function self:getDataAsync(): Promise
-        
-        return Promise.new(function(resolve, reject, onCancel)
-            
-            if not loadedProfile then
-                
-                local promise = self:previewAsync()
-                onCancel(function() promise:cancel() end)
-                
-                promise:expect()
-            end
-            
-            resolve(self.data)
         end)
     end
     
