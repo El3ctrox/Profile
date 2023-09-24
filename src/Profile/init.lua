@@ -291,6 +291,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     end
     
     --// End
+    self:loadAsync()
     return self
 end
 
