@@ -3,6 +3,10 @@
 --// Packages
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataLoader = require(ReplicatedStorage.Packages.DataLoader)
+---@diagnostic disable-next-line: undefined-type
+type DataHandler = DataLoader.DataHandler<table, table>
+---@diagnostic disable-next-line: undefined-type
+type DataLoader = DataLoader.DataLoader<table, table>
 
 -- local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
 type ProfileStore = table   -- ProfileService.ProfileStore
@@ -34,8 +38,8 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     local loadedProfile: Profile?
     
     self.globalUpdate = updateHandlers
-    self.dataLoader = dataLoader
-    self.data = nil :: table?
+    self.dataLoader = dataLoader :: DataLoader
+    self.dataHandler = nil :: DataHandler?
     
     --// Methods
     local function getGlobalUpdate(updateId: number, updateData: table, activeUpdate: ActiveUpdate?): GlobalUpdate
@@ -220,20 +224,18 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         return loadingProfile and loadingProfile:getStatus() == Promise.Status.Resolved
     end
     
-    function self:wrapHandler(container: Instance)
+    function self:wrapHandler(container: Instance?)
         
-        local handler = dataLoader:handle(container)
+        if container then
+            
+            self.dataHandler = dataLoader:handle(container)
+            
+        elseif self.dataHandler then
+            
+            self.dataHandler:unwrap()
+        end
         
-        dataHandlers[container] = handler
-        return handler
-    end
-    function self:findHandler(container: Instance)
-        
-        return dataHandlers[container]
-    end
-    function self:getHandler(container: Instance)
-        
-        return self:findHandler(container) or self:handle(container)
+        return self.dataHandler
     end
     
     --// End
