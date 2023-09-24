@@ -278,9 +278,12 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     
     function self:wrapHandler(container: Instance?)
         
+        assert(not self.dataHandler, `already exists a handler wrapped for this profile`)
+        
         if container then
             
-            self.dataHandler = dataLoader:handle(container)
+            self.dataHandler = dataLoader:wrapHandler(container)
+            container.Destroying:Once(function() self.dataHandler = nil end)
             
         elseif self.dataHandler then
             
