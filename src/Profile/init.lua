@@ -118,10 +118,9 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             onCancel(function() hasCancelled = true end)
             
             loadedProfile = profileStore:LoadProfileAsync(profileEntry, notReleaseHandler)
-            if hasCancelled then return loadedProfile:Release() end
             
             assert(loadedProfile, `has not possible load profile({self})`)
-            handleGlobalUpdates(loadedProfile)
+            if hasCancelled then return loadedProfile:Release() end
             
             local data = loadedProfile.Data
             local loadedData = dataLoader:load(data)
@@ -129,6 +128,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             for _,dataHandler in dataHandlers do dataHandler:set(loadedData) end
             self.data = data
             
+            handleGlobalUpdates(loadedProfile)
             resolve(data)
         end)
     end
