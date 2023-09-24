@@ -7,3 +7,4 @@ realm = "server"
 [dependencies]
 ProfileService = "surnautica/profileservice@1.0.0"
 Promise = "lukadev-0/typed-promise@4.0.2"
+DataLoader = "ernisto/data-loader@0.1.0"

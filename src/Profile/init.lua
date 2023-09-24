@@ -2,7 +2,7 @@
 
 --// Packages
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local structLoader = require(ReplicatedStorage.Packages.DataLoader.struct)
+local DataLoader = require(ReplicatedStorage.Packages.DataLoader)
 
 -- local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
 type ProfileStore = table   -- ProfileService.ProfileStore
@@ -27,7 +27,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     local meta = { __metatable = "locked" }
     local self = setmetatable({ type = "Profile" }, meta)
     
-    local dataLoader = structLoader{}
+    local dataLoader = DataLoader.struct{}
     local dataHandlers = setmetatable({}, { __mode = "k" })
     local updateHandlers = {} :: { [string]: (globalUpdate: GlobalUpdate) -> () }
     local globalUpdates = {} :: { [number]: GlobalUpdate }
