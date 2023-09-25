@@ -250,9 +250,9 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         
         return Promise.new(function(resolve)
             
-            local profile = profileLoading:expect()
+            assert(activation, `profile hasnt activated`)
             
-            assert(profile:IsActive(), `profile must to be active`)
+            local profile = activation:expect()
             if profileHandling then profileHandling:await() end
             
             profile:Release()
