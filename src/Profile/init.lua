@@ -12,7 +12,7 @@ type ActiveUpdate = table   -- ProfileService.ActiveUpdate
 type pureProfile = table    -- ProfileService.Profile
 
 local Promise = require(ReplicatedStorage.Packages.Promise)
-type Promise<Value...> = typeof(Promise.new())    -- Promise.Promise
+type Promise<Value...> = typeof(Promise.new(print))    -- Promise.Promise
 
 local GlobalUpdate = require(script.GlobalUpdate)
 type GlobalUpdate = GlobalUpdate.GlobalUpdate
@@ -31,7 +31,6 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     local self = setmetatable({ type = "Profile" }, meta)
     
     local dataLoader = DataLoader.struct{}
-    local dataHandlers = setmetatable({}, { __mode = "k" })
     local updateHandlers = {} :: { [string]: (globalUpdate: GlobalUpdate) -> () }
     local globalUpdates = {} :: { [number]: GlobalUpdate }
     
@@ -91,7 +90,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             resolve(loadedProfile)
         end)
     end
-    local function activateAsync(notReleasedHandler: notReleasedOption|notReleasedHandler)
+    local function activateAsync(notReleasedHandler: notReleasedOption|notReleasedHandler?)
         
         return Promise.new(function(resolve, reject, onCancel)
             
@@ -107,17 +106,17 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         local data = profile.data
         local loadedData = dataLoader:load(data)
         
-        for _,dataHandler in dataHandlers do dataHandler:set(loadedData) end
+        if self.dataHandler then self.dataHandler:set(loadedData) end
     end
     
     --// Caches
-    local previewingVersions = {} :: { [string]: Promise }
-    local profileHandling: Promise<pureProfile>?
+    local previewingVersions = {} :: { [string]: Promise<pureProfile> }
+    local profileActivation: Promise<pureProfile>?
     local lastProfileLoading: Promise<pureProfile>?  -- rollback if fail to load new profile
     local profileLoading: Promise<pureProfile>?
+    local profileHandling: Promise<table>?
     local lastDataLoading: Promise<table>?   -- rollback if fail to load new data
     local dataLoading: Promise<table>?
-    local activation = false
     
     --// Cached Methods
     function self:previewVersionAsync(version: string): Promise<pureProfile>
@@ -134,32 +133,32 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         return previewAsync()
     end
     
-    function self:activateAsync(notReleasedHandler: notReleasedOption|notReleasedHandler?): Promise<table>
+    function self:activateAsync(notReleasedHandler: notReleasedOption|notReleasedHandler?): Promise<pureProfile>
         
-        if not activation or activation:getStatus() == Promise.Status.Rejected then
+        if not profileActivation then
             
             local newLoading; newLoading = activateAsync(notReleasedHandler)
                 :tap(function() lastProfileLoading = newLoading end)
-                :catch(function() profileLoading = lastProfileLoading end)
+                :catch(function() profileLoading = lastProfileLoading or profileLoading
+                    profileActivation = nil
+                end)
             
+            profileActivation = newLoading
             profileLoading = newLoading
-            activation = newLoading
             dataLoading = nil
         end
         if not dataLoading then
             
             local newDataLoading; newDataLoading = profileLoading:andThen(loadData)
                 :tap(function() lastDataLoading = newDataLoading end)
-                :catch(function() dataLoading = lastDataLoading end)
+                :catch(function() dataLoading = lastDataLoading or dataLoading end)
             
             dataLoading = newDataLoading
             profileHandling = nil
         end
         if not profileHandling then
             
-            profileHandling = profileLoading
-                :tap(function() dataLoading:await() end)
-                :tap(handleGlobalUpdates)
+            profileHandling = dataLoading:tap(handleGlobalUpdates)
         end
         
         return profileHandling
@@ -170,11 +169,11 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
         
         local newLoading; newLoading = previewAsync()
             :tap(function() lastProfileLoading = newLoading end)
-            :catch(function() profileLoading = lastProfileLoading end)
+            :catch(function() profileLoading = lastProfileLoading or profileLoading end)
         
         local newDataLoading; newDataLoading = profileLoading:andThen(loadData)
             :tap(function() lastDataLoading = newDataLoading end)
-            :catch(function() dataLoading = lastDataLoading end)
+            :catch(function() dataLoading = lastDataLoading or dataLoading end)
         
         profileLoading = newLoading
         dataLoading = newDataLoading
@@ -186,7 +185,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             
             local newLoading; newLoading = previewAsync()
                 :tap(function() lastProfileLoading = newLoading end)
-                :catch(function() profileLoading = lastProfileLoading end)
+                :catch(function() profileLoading = lastProfileLoading or profileLoading end)
             
             profileLoading = newLoading
             dataLoading = nil
@@ -195,7 +194,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             
             local newDataLoading; newDataLoading = profileLoading:andThen(loadData)
                 :tap(function() lastDataLoading = newDataLoading end)
-                :catch(function() dataLoading = lastDataLoading end)
+                :catch(function() dataLoading = lastDataLoading or dataLoading end)
             
             dataLoading = newDataLoading
             profileHandling = nil
@@ -220,6 +219,8 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     end
     function self:getLockedUpdatesAsync(): Promise<{GlobalUpdate}>
         
+        assert(profileLoading)
+        
         return profileLoading:andThen(function(profile)
             
             return profile.GlobalUpdates:GetLockedUpdates()
@@ -227,13 +228,17 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     end
     function self:getActiveUpdatesAsync(): Promise<{GlobalUpdate}>
         
+        assert(profileLoading)
+        
         return profileLoading:andThen(function(profile)
             
             return profile.GlobalUpdates:GetActiveUpdates()
         end)
     end
     
-    function self:overwriteAsync(): Promise
+    function self:overwriteAsync(): Promise<>
+        
+        assert(profileLoading)
         
         return profileLoading:andThen(function(profile)
             
@@ -246,23 +251,25 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
             end
         end)
     end
-    function self:releaseAsync(): Promise
+    function self:releaseAsync(): Promise<>
+        
+        assert(profileActivation, `profile hasnt activated`)
         
         return Promise.new(function(resolve)
             
-            assert(activation, `profile hasnt activated`)
-            
-            local profile = activation:expect()
+            local profile = profileActivation:expect()
             if profileHandling then profileHandling:await() end
             
             profile:Release()
             profile:ListenToHopReady(resolve)
             
             profileLoading = nil
-            activation = nil
+            profileActivation = nil
         end)
     end
-    function self:saveAsync(): Promise
+    function self:saveAsync(): Promise<>
+        
+        assert(profileLoading)
         
         return profileLoading:andThen(function(profile)
             
@@ -277,12 +284,14 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     end
     function self:isActive(): boolean
         
+        if not profileLoading then return false end
+        
         local isLoaded, profile = profileLoading:now():await()
-        return isLoaded and profile:IsActive() or false
+        return if isLoaded then profile:IsActive() else false
     end
     function self:isLoaded(): boolean
         
-        return profileLoading and profileLoading:getStatus() == Promise.Status.Resolved
+        return if profileLoading then profileLoading:getStatus() == Promise.Status.Resolved else false
     end
     
     function self:wrapHandler(container: Instance?)
@@ -308,5 +317,5 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
 end
 
 --// End
-export type Profile = typeof(Profile.wrap())
+export type Profile = typeof(Profile.new("", {}))
 return Profile
