@@ -37,6 +37,7 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     self.globalUpdate = updateHandlers
     self.dataLoader = dataLoader :: DataLoader
     self.dataHandler = nil :: DataHandler?
+    self.data = nil
     
     --// Utils
     type notReleasedHandler = (placeId: number, gameJobId: string) -> "Repeat"|"Cancel"|notReleasedOption
@@ -104,8 +105,9 @@ function Profile.new(profileEntry: string|any, profileStore: ProfileStore)
     local function loadData(profile)
         
         local data = profile.data
-        local loadedData = dataLoader:load(data)
+        self.data = data
         
+        local loadedData = dataLoader:load(data)
         if self.dataHandler then self.dataHandler:set(loadedData) end
     end
     
