@@ -23,7 +23,7 @@ end)
 activation:andThen(function()
     
     local guildProfile = playersProfileStore:get(ernistoProfile.data.guildId)
-    local guildLoading = guildProfile:loadAsync():expect()  -- readonly data
+    guildProfile:loadAsync():expect()  -- readonly data
     
     guildProfile.data.a = 10
     guildProfile:overwrite()
