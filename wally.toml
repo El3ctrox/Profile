@@ -1,10 +1,11 @@
 [package]
-name = "ernisto/profilestore"
+name = "ernisto/profile-store"
 version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "server"
 
 [dependencies]
 ProfileService = "surnautica/profileservice@1.0.0"
-Promise = "lukadev-0/typed-promise@4.0.2"
 DataLoader = "ernisto/data-loader@0.1.0"
+Promise = "lukadev-0/typed-promise@4.0.2"
+Wrapper = "ernisto/wrapper@0.1.0"

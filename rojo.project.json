@@ -4,17 +4,7 @@
     "$className": "DataModel",
     
     "ReplicatedStorage": {
-      "Packages": {
-        "$ignoreUnknownInstances": true,
-        "$className": "Folder",
-        "$path": "Packages",
-        
-        "_Index": {
-          "$ignoreUnknownInstances": true,
-          "$className": "Folder"
-        },
-        "ProfileStore": { "$path": "src" }
-      }
+      "Packages": { "$path": "Packages" }
     }
   }
 }
