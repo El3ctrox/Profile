@@ -13,7 +13,7 @@ All behaviors has explained in [Unit Tests WIP](src/Profile/init.spec.lua)
 local playersProfileStore = ProfileStore.get("Players") -- cached
 
 local ernistoProfile = playersProfileStore:get("ernisto malvadao")  -- cached too
-local activation = profile:activateAsync()
+local activation = profile:activateAsync()    -- mutable data
 
 player.AncestryChanged:Once(function()
     
@@ -23,7 +23,7 @@ end)
 activation:andThen(function()
     
     local guildProfile = playersProfileStore:get(ernistoProfile.data.guildId)
-    local loading = profile:loadAsync():expect()  -- readonly
+    guildProfile:loadAsync():expect()  -- readonly data
     
     guildProfile.data.a = 10
     guildProfile:overwrite()
