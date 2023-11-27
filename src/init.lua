@@ -1,13 +1,12 @@
 --!strict
 
 --// Packages
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local wrapper = require(ReplicatedStorage.Packages.Wrapper)
+local wrapper = require(script.Parent.Wrapper)
 
-local Promise = require(ReplicatedStorage.Packages.Promise)
+local Promise = require(script.Parent.Promise)
 type Promise = typeof(Promise.new())
 
-local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
+local ProfileService = require(script.Parent.ProfileService)
 type ProfileVersionQuery = { NextAsync: (self: unwrappedProfile) -> unwrappedProfile? }
 type unwrappedProfile = table    -- ProfileService.Profile
 type ActiveUpdate = table

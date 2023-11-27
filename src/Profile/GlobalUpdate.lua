@@ -1,8 +1,7 @@
 --!strict
 
 --// Packages
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
---local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
+--local ProfileService = require(script.Parent.Parent.Parent.ProfileService)
 type ActiveUpdate = table
 type Profile = table
 

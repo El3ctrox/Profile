@@ -1,17 +1,16 @@
 --!strict
 
 --// Packages
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local DataLoader = require(ReplicatedStorage.Packages.DataLoader)
+local DataLoader = require(script.Parent.Parent.DataLoader)
 type DataHandler = table    -- DataLoader.DataHandler<table, table>
 type DataLoader = table -- DataLoader.DataLoader<table, table>
 
--- local ProfileService = require(ReplicatedStorage.Packages.ProfileService)
+-- local ProfileService = require(script.Parent.Parent.ProfileService)
 type ProfileStore = table   -- ProfileService.ProfileStore
 type ActiveUpdate = table   -- ProfileService.ActiveUpdate
 type pureProfile = table    -- ProfileService.Profile
 
-local Promise = require(ReplicatedStorage.Packages.Promise)
+local Promise = require(script.Parent.Parent.Promise)
 type Promise<Value...> = typeof(Promise.new(print))    -- Promise.Promise
 
 local GlobalUpdate = require(script.GlobalUpdate)
